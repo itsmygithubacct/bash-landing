@@ -1,15 +1,27 @@
-"""WAV file player with threading and looping support."""
+"""WAV file player with threading and looping support.
+
+Supports local playback via PyAudio or remote relay via AUDIO_RELAY env var.
+Set AUDIO_RELAY=host:port to stream sound over TCP (for SSH sessions).
+"""
 
 import wave
 import os
 import sys
 import logging
+import struct
+import socket
 from typing import Optional
 import threading
 import subprocess
 import ctypes
 
 logger = logging.getLogger(__name__)
+
+# Relay protocol commands
+_CMD_PLAY = 0x01
+_CMD_LOOP_START = 0x02
+_CMD_LOOP_STOP = 0x03
+_CMD_CLOSE = 0x04
 
 
 def _suppress_alsa_errors():
@@ -200,13 +212,94 @@ class _LoopingSound:
                     pass
 
 
+class RelayPlayer:
+    """Sends WAV data over TCP to an audio_relay.py instance."""
+
+    def __init__(self, host: str, port: int):
+        self._host = host
+        self._port = port
+        self._sock: Optional[socket.socket] = None
+        self._lock = threading.Lock()
+        self._wav_cache: dict[str, bytes] = {}
+        self._connect()
+
+    def _connect(self):
+        try:
+            self._sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._sock.connect((self._host, self._port))
+        except Exception:
+            self._sock = None
+
+    def _send_msg(self, payload: bytes):
+        if self._sock is None:
+            return
+        msg = struct.pack('>I', len(payload)) + payload
+        with self._lock:
+            try:
+                self._sock.sendall(msg)
+            except Exception:
+                self._sock = None
+
+    def _read_wav(self, filename: str) -> bytes:
+        cached = self._wav_cache.get(filename)
+        if cached is not None:
+            return cached
+        try:
+            with open(filename, 'rb') as f:
+                data = f.read()
+            self._wav_cache[filename] = data
+            return data
+        except Exception:
+            return b''
+
+    def play(self, filename: str, volume: float = 1.0):
+        wav_data = self._read_wav(filename)
+        if not wav_data:
+            return
+        name = os.path.basename(filename).encode()
+        payload = (bytes([_CMD_PLAY, len(name)]) + name +
+                   struct.pack('>f', volume) + wav_data)
+        self._send_msg(payload)
+
+    def loop_start(self, name: str, filename: str, volume: float = 1.0):
+        wav_data = self._read_wav(filename)
+        if not wav_data:
+            return
+        name_b = name.encode()
+        payload = (bytes([_CMD_LOOP_START, len(name_b)]) + name_b +
+                   struct.pack('>f', volume) + wav_data)
+        self._send_msg(payload)
+
+    def loop_stop(self, name: str):
+        name_b = name.encode()
+        payload = bytes([_CMD_LOOP_STOP, len(name_b)]) + name_b
+        self._send_msg(payload)
+
+    def close(self):
+        if self._sock:
+            try:
+                self._send_msg(bytes([_CMD_CLOSE]))
+                self._sock.close()
+            except Exception:
+                pass
+            self._sock = None
+
+
 # Global player instance
-_player: Optional[WavPlayer] = None
+_player = None
 
 
-def get_player() -> WavPlayer:
+def get_player():
     global _player
     if _player is None:
+        relay = os.environ.get('AUDIO_RELAY')
+        if relay:
+            try:
+                host, port = relay.rsplit(':', 1)
+                _player = RelayPlayer(host, int(port))
+                return _player
+            except Exception:
+                pass
         _player = WavPlayer()
     return _player
 
