@@ -1,0 +1,85 @@
+{
+  "game": {
+    "title": "Bash Landing - Lunar Landing",
+    "fps": 60,
+    "width": 120,
+    "height": 80
+  },
+  "display": {
+    "title_text": "BASH LANDING",
+    "background_image": "backgrounds/bash_landing_title.png",
+    "sounds_dir": "sounds"
+  },
+  "controls": {
+    "thrust_up": ["UP_ARROW", "w", "W"],
+    "thrust_left": ["LEFT_ARROW", "a", "A"],
+    "thrust_right": ["RIGHT_ARROW", "d", "D"],
+    "pause": "ESCAPE",
+    "quit": "q",
+    "confirm": ["RETURN", "ENTER", "SPACE"]
+  },
+  "gameplay": {
+    "gravity": 4.5,
+    "lander_width": 5,
+    "lander_height": 5,
+    "initial_fuel": 150.0,
+    "min_fuel": 30.0,
+    "fuel_decrease_per_level": 5.0,
+    "max_safe_speed": 12.0,
+    "max_rotation_for_landing": 0.35,
+    "thrust_power": 26.0,
+    "side_thrust_power": 12.0,
+    "fuel_main_rate": 10.0,
+    "fuel_side_rate": 4.0,
+    "angular_thrust_power": 7.0,
+    "angular_damping": 0.92,
+    "max_angle": 1.5708,
+    "max_landing_angle": 0.2,
+    "drag_coefficient": 0.998,
+    "terrain_base_height": 65,
+    "initial_pad_width": 15,
+    "min_pad_margin": 2,
+    "base_roughness": 8,
+    "roughness_increase_rate": 2,
+    "base_landing_points": 50,
+    "bonus_landing_points": 50,
+    "level_complete_delay": 2.0,
+    "num_stars": 80,
+    "starting_lives": 3,
+    "thrust_sound_interval": 0.15,
+    "altitude_beep_threshold": 20,
+    "fuel_warning_threshold": 25
+  },
+  "ui": {
+    "hud_color": [255, 255, 255],
+    "fuel_bar_width": 20,
+    "speed_bar_width": 20,
+    "safe_speed_color": [0, 255, 0],
+    "danger_speed_color": [255, 0, 0],
+    "fuel_ok_color": [255, 255, 0],
+    "fuel_low_color": [255, 0, 0],
+    "fuel_low_threshold": 25
+  },
+  "menu": {
+    "extra_items": [
+      {"label": "CONTROLS", "scene": "controls"}
+    ]
+  },
+  "difficulty": {
+    "easy": {
+      "gravity": 3.0,
+      "initial_fuel": 200.0,
+      "max_safe_speed": 16.0
+    },
+    "normal": {
+      "gravity": 4.5,
+      "initial_fuel": 150.0,
+      "max_safe_speed": 12.0
+    },
+    "hard": {
+      "gravity": 6.0,
+      "initial_fuel": 100.0,
+      "max_safe_speed": 8.0
+    }
+  }
+}
